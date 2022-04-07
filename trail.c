@@ -159,49 +159,44 @@ void *rnd_read_test(void *vargp){
     pthread_exit(NULL);
 }
 
-int main(int argc, char ** argv){
-	if(argc != 5){
-		printf("usage: path_to_folder num_thread size round\n");
-		return -1;
-	}
-	uint64_t total_bytes = 0, real_time;
-	int fd;
-    char *buffer;       //the data source for seq tests
-    char *rnd_buf;
-	char *path = argv[1];
-	int num_thread = atoi(argv[2]);
-	long long size = atoll(argv[3]);
-	int round = atoll(argv[4]);
-	int rnd_blk_size = 4096;
-    long long *rnd_addrs;
-    static uint16_t seeds[3] = { 182, 757, 21 };
-    printf("Pid : %ld\n",(long)getppid());
-    printf("Enter to continue\n");
-    char enter = 0;
-    while(enter!="\n"){
-        enter = getchar();
+int main(int argc, char** argv) {
+    if (argc != 5) {
+        printf("usage: path_to_folder num_thread size round\n");
+        return -1;
     }
+    uint64_t total_bytes = 0, real_time;
+    int fd;
+    char* buffer;       //the data source for seq tests
+    char* rnd_buf;
+    char* path = argv[1];
+    int num_thread = atoi(argv[2]);
+    long long size = atoll(argv[3]);
+    int round = atoll(argv[4]);
+    int rnd_blk_size = 4096;
+    long long* rnd_addrs;
+    static uint16_t seeds[3] = { 182, 757, 21 };
 
-	if(size % 1024 != 0){
+    if (size % 1024 != 0) {
         printf("Error: Size must be a multiple of 1024");
         exit(-1);
-	}
+    }
     printf("*************************************************************************\n");
     printf("Preparing the testing data.\n");
-    if(size >= 1 * _GB){
+    if (size >= 1 * _GB) {
         buffer = malloc(1 * _GB);  //cap the max buffer size to 1GB
-        for(uint64_t i = 0; i < (1 * _GB / sizeof(char)); i++){
+        for (uint64_t i = 0; i < (1 * _GB / sizeof(char)); i++) {
             buffer[i] = i % 256;    //hash function for later data consistance check
         }
-    } else {
+    }
+    else {
         buffer = malloc(size);  //init the buffer to custom size
-        for(uint64_t i = 0; i < (size / sizeof(char)); i++){
+        for (uint64_t i = 0; i < (size / sizeof(char)); i++) {
             buffer[i] = i % 256;    //hash function for later data consistance check
         }
     }
     //preparing the random test address list
     rnd_addrs = malloc(sizeof(long long) * num_thread);
-    for(int i = 0; i < num_thread; i++){
+    for (int i = 0; i < num_thread; i++) {
         rnd_addrs[i] = nrand48(seeds) % (size - rnd_blk_size + 1);
         printf("%09x\n", rnd_addrs[i]);
     }
@@ -219,8 +214,8 @@ int main(int argc, char ** argv){
     printf("*************************************************************************\n");
     real_time = 0;
     total_bytes = 0;
-    fd = OPEN (path, O_WRONLY | O_CREAT | O_SYNC, S_IRWXU);
-    for(int i = 0; i < num_thread; i++){
+    fd = OPEN(path, O_WRONLY | O_CREAT | O_SYNC, S_IRWXU);
+    for (int i = 0; i < num_thread; i++) {
         conf[i].fd = fd;
         conf[i].tid = i;
         conf[i].round = round;
@@ -232,7 +227,7 @@ int main(int argc, char ** argv){
         pthread_create(&threads[i], NULL, seq_write_test, (void*)&conf[i]);
     }
 
-    for(int i = 0; i < num_thread; i++)
+    for (int i = 0; i < num_thread; i++)
     {
         pthread_join(threads[i], NULL);
         real_time += conf[i].total_time;
@@ -257,7 +252,7 @@ int main(int argc, char ** argv){
     real_time = 0;
     total_bytes = 0;
     fd = OPEN(path, O_RDONLY | O_SYNC, S_IRWXU);
-    for(int i = 0; i < num_thread; i++){
+    for (int i = 0; i < num_thread; i++) {
         conf[i].fd = fd;
         conf[i].tid = i;
         conf[i].round = round;
@@ -269,7 +264,7 @@ int main(int argc, char ** argv){
         pthread_create(&threads[i], NULL, seq_read_test, (void*)&conf[i]);
     }
 
-    for(int i = 0; i < num_thread; i++)
+    for (int i = 0; i < num_thread; i++)
     {
         pthread_join(threads[i], NULL);
         real_time += conf[i].total_time;
@@ -284,9 +279,9 @@ int main(int argc, char ** argv){
     printf("\tTotal Byte Read in %d rounds: %lu bytes\n", round, total_bytes);
     printf("\tAverage Read Speed: %f GB/s\n", (double)total_bytes / (double)real_time);
 
-    for(uint64_t i = 0; i < (size / sizeof(char)); i++)
+    for (uint64_t i = 0; i < (size / sizeof(char)); i++)
     {
-        if(buffer[i] != ((char)i % 256)){
+        if (buffer[i] != ((char)i % 256)) {
             printf("Error: Data varification failed!\n");
             exit(-1);
         }
@@ -302,7 +297,7 @@ int main(int argc, char ** argv){
     real_time = 0;
     total_bytes = 0;
     fd = OPEN(path, O_WRONLY | O_SYNC, S_IRWXU);
-    for(int i = 0; i < num_thread; i++){
+    for (int i = 0; i < num_thread; i++) {
         conf[i].fd = fd;
         conf[i].tid = i;
         conf[i].round = round;
@@ -316,7 +311,7 @@ int main(int argc, char ** argv){
         pthread_create(&threads[i], NULL, rnd_write_test, (void*)&conf[i]);
     }
 
-    for(int i = 0; i < num_thread; i++)
+    for (int i = 0; i < num_thread; i++)
     {
         pthread_join(threads[i], NULL);
         real_time += conf[i].total_time;
@@ -333,11 +328,11 @@ int main(int argc, char ** argv){
 
     fd = OPEN(path, O_RDONLY | O_SYNC, S_IRWXU);
     rnd_buf = malloc(conf->blk_size);
-    for(int i = 0; i < num_thread; i++)
+    for (int i = 0; i < num_thread; i++)
     {
         pread(fd, rnd_buf, rnd_blk_size, rnd_addrs[i]);
-        for(uint64_t j = 0; j < (rnd_blk_size / sizeof(char)); j++){
-           if((int)rnd_buf[j] != i){
+        for (uint64_t j = 0; j < (rnd_blk_size / sizeof(char)); j++) {
+            if ((int)rnd_buf[j] != i) {
                 printf("Error: Data varification failed!\n");
                 printf("Expect: %d, but got: %d\n", i, (int)rnd_buf[j]);
                 exit(-1);
@@ -356,7 +351,7 @@ int main(int argc, char ** argv){
     real_time = 0;
     total_bytes = 0;
     fd = OPEN(path, O_RDONLY | O_SYNC, S_IRWXU);
-    for(int i = 0; i < num_thread; i++){
+    for (int i = 0; i < num_thread; i++) {
         conf[i].fd = fd;
         conf[i].tid = i;
         conf[i].round = round;
@@ -371,7 +366,7 @@ int main(int argc, char ** argv){
         pthread_create(&threads[i], NULL, rnd_read_test, (void*)&conf[i]);
     }
 
-    for(int i = 0; i < num_thread; i++)
+    for (int i = 0; i < num_thread; i++)
     {
         pthread_join(threads[i], NULL);
         real_time += conf[i].total_time;
@@ -387,5 +382,67 @@ int main(int argc, char ** argv){
     printf("\tAverage Read Speed: %f GB/s\n", (double)total_bytes / (double)real_time);
     printf("\n");
 
-	return 0;
+    return 0;
+
+    /*************************************************************************
+    * beginning of the single file multi-thread sequential write & read test.
+    *************************************************************************/
+    printf("Starting %d thread(s) SEQ Read Test & %d Rnd Write Test\n", num_thread / 2, num_thread / 2);
+    printf("*************************************************************************\n");
+    real_time = 0;
+    total_bytes = 0;
+    fd = OPEN(path, O_RDONLY | O_SYNC, S_IRWXU);
+
+    //Half of the threads will perform sequential Read test
+    for (int i = 0; i < num_thread / 2; i++) {
+        conf[i].fd = fd;
+        conf[i].tid = i;
+        conf[i].round = round;
+        conf[i].tnum = num_thread;
+        conf[i].size = size;
+        conf[i].buffer = buffer;
+        conf[i].total_bytes = 0;
+        conf[i].total_time = 0;
+        pthread_create(&threads[i], NULL, seq_read_test, (void*)&conf[i]);
+    }
+
+    //Half of the threads will perform random write test
+    for (int i = num_thread / 2; i < num_thread; i++) {
+        conf[i].fd = fd;
+        conf[i].tid = i;
+        conf[i].round = round;
+        conf[i].tnum = num_thread;
+        conf[i].size = size;
+        conf[i].blk_size = rnd_blk_size;
+        conf[i].buffer = buffer;
+        conf[i].total_bytes = 0;
+        conf[i].total_time = 0;
+        conf[i].rnd_addrs = rnd_addrs;
+        pthread_create(&threads[i], NULL, rnd_write_test, (void*)&conf[i]);
+    }
+
+
+    for (int i = 0; i < num_thread; i++)
+    {
+        pthread_join(threads[i], NULL);
+        real_time += conf[i].total_time;
+        total_bytes += conf[i].total_bytes;
+    }
+    //close file here for writeback time
+    CLOSE(fd);
+
+    real_time = real_time / num_thread;//Why divided by n_thread?
+    printf("Sequential Read Test & random Write test Completed: \n");
+    printf("\tTotal Time Used: %lu ns\n", real_time);
+    printf("\tTotal Byte Read in %d rounds: %lu bytes\n", round, total_bytes);
+    printf("\tAverage Read Speed: %f GB/s\n", (double)total_bytes / (double)real_time);
+
+    for (uint64_t i = 0; i < (size / sizeof(char)); i++)
+    {
+        if (buffer[i] != ((char)i % 256)) {
+            printf("Error: Data varification failed!\n");
+            exit(-1);
+        }
+    }
+    printf("\n");
 }
